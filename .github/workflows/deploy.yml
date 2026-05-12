@@ -136,4 +136,4 @@ jobs:
             docker pull ${{ secrets.DOCKER_USERNAME }}/hange-backend:latest
 
             # restart backend
-            docker-compose up -d backend
+            docker compose up -d backend
