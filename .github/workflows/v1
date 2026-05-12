@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    environment: vps-hange
+    environment: vps-hange-spring
 
     steps:
       # checkout source code
@@ -35,14 +35,10 @@ jobs:
       # build Spring Boot bằng Gradle
       - name: Build with Gradle
         run: ./gradlew clean build -x test
-
-  # ======================
-  # DEPLOY JOB (CD)
-  # ======================
   deploy:
     runs-on: ubuntu-latest
 
-    environment: vps-hange
+    environment: vps-hange-spring
 
     needs: build
 
@@ -59,21 +55,8 @@ jobs:
           script: |
 
             # vào folder backend trên VPS
-            cd ~/.production/hange-backend
+            cd ~/.production/hange-be
 
             # update code
             git fetch --all
             git reset --hard origin/main
-
-            # tạo env production
-            echo "${{ secrets.ENV_PRODUCTION_SPRING }}" > .env
-
-            # build lại bằng Gradle trên VPS (nếu bạn muốn build ở VPS)
-            ./gradlew clean build -x test
-
-            # tìm file jar trong build/libs
-            JAR_FILE=$(ls build/libs/*.jar | head -n 1)
-
-            # restart app
-            pkill -f 'java -jar' || true
-            nohup java -jar $JAR_FILE > app.log 2>&1 &
