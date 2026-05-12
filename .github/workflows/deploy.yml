@@ -38,7 +38,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    environment: vps-hange
+    environment: vps-hange-spring
 
     needs: build
 
