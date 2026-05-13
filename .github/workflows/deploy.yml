@@ -137,3 +137,4 @@ jobs:
 
             # restart backend
             docker compose up -d backend
+            docker image prune -f

@@ -15,7 +15,7 @@ public class Test {
 	public ResponseEntity<Map<String, Object>> ping() {
 		Map<String, Object> res = new HashMap<>();
 		res.put("status", "UP");
-		res.put("message", "Backend is running!!! ok fine");
+		res.put("message", "Backend is running!!! no fine");
 		res.put("timestamp", Instant.now().toString());
 
 		return ResponseEntity.ok(res);
