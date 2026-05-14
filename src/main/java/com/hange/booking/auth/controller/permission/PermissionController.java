@@ -2,6 +2,7 @@ package com.hange.booking.auth.controller.permission;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -46,7 +47,8 @@ public class PermissionController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponseFormat> getAll(PermissionFilterDTO filter, Pageable pageable) {
+	public ResponseEntity<ApiResponseFormat> getAll(PermissionFilterDTO filter,
+			@PageableDefault(size = 999) Pageable pageable) {
 		Page<Permission> permissions = permissionService.getAll(filter, pageable);
 		return ResponseEntity.ok(ApiResponseUtil.success(permissions.getContent(), HttpStatus.OK.value()));
 	}
