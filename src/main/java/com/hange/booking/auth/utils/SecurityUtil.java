@@ -47,6 +47,7 @@ public class SecurityUtil {
 	    JwtClaimsSet claims = JwtClaimsSet.builder()
 	        .issuedAt(now)
 	        .expiresAt(validity)
+//	        .expiresAt(now.plus(15, ChronoUnit.SECONDS))
 			// sub xác định cho biết token này thuộc về ai
 	        .subject(subject)
 			// claim là thông tin thêm 
@@ -66,6 +67,7 @@ public class SecurityUtil {
 		// @formatter:off
 	    JwtClaimsSet claims = JwtClaimsSet.builder()
 	        .issuedAt(now)
+//	        .expiresAt(now.plus(15, ChronoUnit.SECONDS))
 	        .expiresAt(validity)
 	        .subject(subject)
 	        .build();

@@ -2,6 +2,7 @@ package com.hange.booking.auth.config;
 
 import java.util.List;
 
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -41,8 +42,28 @@ public class PermissionInterceptor implements HandlerInterceptor {
 		System.out.println(">>> httpMethod= " + httpMethod);
 		System.out.println(">>> requestURI= " + requestURI);
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		String email = (authentication != null) ? authentication.getName() : "";
+//		String email = (authentication != null) ? authentication.getName() : "";
+		if (authentication == null || !authentication.isAuthenticated()
+				|| authentication instanceof AnonymousAuthenticationToken) {
+			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+			response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
+
+			response.getWriter().write("""
+					{
+					    "status": 400,
+					    "message": "Unauthorized",
+					    "errorCode": "INVALID_TOKEN",
+					    "data": null,
+					    "error": "INVALID_TOKEN"
+					}
+					""");
+
+			return false;
+		}
+		String email = authentication.getName();
 		if (email != null && !email.isEmpty()) {
+			System.out.println("email" + email);
 			User user = this.userService.getUserByEmail(email);
 			if (user != null) {
 				Role role = user.getRole();

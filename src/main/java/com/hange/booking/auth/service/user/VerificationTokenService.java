@@ -36,7 +36,7 @@ public class VerificationTokenService {
 	public VerificationToken verify(String rawToken, TokenType type) {
 		String hashToken = rawToken;
 		VerificationToken token = verificationTokenRepository.findByTokenHashAndType(hashToken, type)
-				.orElseThrow(() -> new AppRuntimeException(ErrorCode.INVALID_TOKEN));
+				.orElseThrow(() -> new AppRuntimeException(ErrorCode.TOKEN_TYPE_INVALID));
 
 		validate(token);
 		return token;
@@ -53,7 +53,7 @@ public class VerificationTokenService {
 
 	private void validate(VerificationToken token) {
 		if (Boolean.TRUE.equals(token.getUsed()))
-			throw new AppRuntimeException(ErrorCode.USED_TOKEN);
+			throw new AppRuntimeException(ErrorCode.TOKEN_ALREADY_USED);
 
 		if (token.getExpiresAt().isBefore(LocalDateTime.now()))
 			throw new AppRuntimeException(ErrorCode.TOKEN_EXPIRED);

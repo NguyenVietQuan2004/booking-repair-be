@@ -17,7 +17,6 @@ import com.hange.booking.auth.entity.user.User;
 import com.hange.booking.auth.exception.AppRuntimeException;
 import com.hange.booking.auth.exception.ErrorCode;
 import com.hange.booking.auth.repository.UserRepository;
-import com.hange.booking.auth.service.file.FileService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,7 +30,6 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final TokenService tokenService;
-	private final FileService fileService;
 
 	public List<User> getAllUsers() {
 		return userRepository.findAll();
@@ -66,16 +64,26 @@ public class UserService {
 	}
 
 	public void changePassword(String email, RequestChangePasswordDTO request) {
-		User user = userRepository.findByEmail(email)
-				.orElseThrow(() -> new AppRuntimeException(ErrorCode.USER_NOT_FOUND));
+		User user = this.getUserByEmail(email);
 
-		if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
-			throw new AppRuntimeException(ErrorCode.WRONG_PASSWORD);
+		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
+			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
 		}
 
-		updatePassword(user, request.getNewPassword());
-		PasswordChangeOption option = request.getOption() == null ? PasswordChangeOption.REVOKE_ALL
-				: request.getOption();
+		if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+			throw new AppRuntimeException(ErrorCode.AUTH_INVALID_CREDENTIALS);
+		}
+
+		if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
+			throw new AppRuntimeException(ErrorCode.PASSWORD_CONFIRMATION_MISMATCH);
+		}
+		this.validatePasswordPolicy(request.getNewPassword());
+		if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+			throw new AppRuntimeException(ErrorCode.PASSWORD_CONFIRMATION_MISMATCH);
+		}
+
+		updatePasswordAndLastChangePass(user, request.getNewPassword());
+		PasswordChangeOption option = request.getOption() == null ? PasswordChangeOption.KEEP_ALL : request.getOption();
 		tokenService.handleSessionAfterPasswordChange(user, option, request.getRefreshToken());
 	}
 
@@ -91,9 +99,10 @@ public class UserService {
 		}
 	}
 
-	public void updatePassword(User user, String newPassword) {
+	public void updatePasswordAndLastChangePass(User user, String newPassword) {
 		user.setPasswordHash(passwordEncoder.encode(newPassword));
 		user.setTokenVersion(user.getTokenVersion() == null ? 1 : user.getTokenVersion() + 1);
+		user.setPasswordChangedAt(LocalDateTime.now());
 		userRepository.save(user);
 	}
 
@@ -102,6 +111,8 @@ public class UserService {
 	}
 
 	public User createUser(String email, String password, Role role) {
+		System.out.println(password);
+		this.validatePasswordPolicy(password);
 		User user = new User();
 		user.setEmail(email);
 		user.setPasswordHash(passwordEncoder.encode(password));
@@ -136,6 +147,36 @@ public class UserService {
 		}
 
 		return userRepository.save(user);
+	}
+
+	public void validateUser(User user) {
+
+		if (user.getAccountStatus() != AccountStatusEnum.ACTIVE) {
+			throw new AppRuntimeException(ErrorCode.USER_NOT_ACTIVE);
+		}
+
+		if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+			throw new AppRuntimeException(ErrorCode.EMAIL_NOT_VERIFIED);
+		}
+
+		if (user.getRole() == null) {
+			throw new AppRuntimeException(ErrorCode.ROLE_NOT_FOUND);
+		}
+
+		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
+			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
+		}
+	}
+
+	public void validatePasswordPolicy(String password) {
+		String PASSWORD_PATTERN = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$";
+		if (password == null || password.isBlank()) {
+			throw new AppRuntimeException(ErrorCode.PASSWORD_REQUIRED);
+		}
+
+		if (!password.matches(PASSWORD_PATTERN)) {
+			throw new AppRuntimeException(ErrorCode.PASSWORD_POLICY_VIOLATION);
+		}
 	}
 
 }

@@ -30,8 +30,9 @@ public class SecurityConfiguration {
 						.requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/verify-email",
 								"/api/v1/auth/resend-verification", "/api/v1/auth/forgot-password",
 								"/api/v1/auth/reset-password", "/api/v1/auth/refresh-token")
-						.permitAll().requestMatchers("/api/v1/**", "/api/v1/files", "/").permitAll().anyRequest()
-						.authenticated()
+						.permitAll()
+//							.requestMatchers("/api/v1/**", "/api/v1/files", "/").permitAll()
+						.anyRequest().authenticated()
 //						permitall không có nghĩa là ko check - miễn có header là check
 //						nó là: bạn có được phép vào không, nhưng vẫn check bạn là ai
 				).oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults())

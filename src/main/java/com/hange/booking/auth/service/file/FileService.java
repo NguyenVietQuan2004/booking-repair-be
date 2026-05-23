@@ -114,7 +114,7 @@ public class FileService {
 		}
 
 		if (file.getSize() > maxFileSize.toBytes()) {
-			throw new AppRuntimeException(ErrorCode.FILE_TOO_LARGE);
+			throw new AppRuntimeException(ErrorCode.FILE_SIZE_EXCEEDED);
 		}
 	}
 

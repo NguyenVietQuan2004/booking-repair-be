@@ -27,7 +27,6 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 		response.setStatus(HttpServletResponse.SC_FORBIDDEN); // 403
 
 		String message = accessDeniedException.getMessage() != null ? accessDeniedException.getMessage() : "Forbidden";
-
 		objectMapper.writeValue(response.getWriter(),
 				ApiResponseUtil.error(message, HttpServletResponse.SC_FORBIDDEN, "ACCESS_DENIED"));
 

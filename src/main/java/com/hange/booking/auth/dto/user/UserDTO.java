@@ -33,7 +33,7 @@ public class UserDTO {
 
 	private Integer failedLoginCount;
 	private LocalDateTime lockedUntil;
-
+	private LocalDateTime nextBookingAllowedAt;
 	private LocalDateTime passwordChangedAt;
 
 	private Integer tokenVersion;

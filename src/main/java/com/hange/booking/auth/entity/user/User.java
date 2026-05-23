@@ -64,7 +64,7 @@ public class User {
 	private Integer failedLoginCount = 0;
 
 	private LocalDateTime lockedUntil;
-
+	private LocalDateTime nextBookingAllowedAt;
 	@Builder.Default
 	@Enumerated(EnumType.STRING)
 	private AccountStatusEnum accountStatus = AccountStatusEnum.PENDING;

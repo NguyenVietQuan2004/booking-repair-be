@@ -1,9 +1,13 @@
 package com.hange.booking.auth.service.auth;
 
+import java.time.LocalDateTime;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.hange.booking.auth.dto.user.RequestRegisterDTO;
 import com.hange.booking.auth.dto.user.RequestResetPasswordDTO;
+import com.hange.booking.auth.dto.user.ResendVerificationRequestDTO;
 import com.hange.booking.auth.entity.role.Role;
 import com.hange.booking.auth.entity.role.RoleUserEnum;
 import com.hange.booking.auth.entity.user.PasswordChangeOption;
@@ -30,6 +34,7 @@ public class AuthService {
 	private final RoleService roleService;
 	private final EmailService emailService;
 	private final VerificationTokenService verificationTokenService;
+	private final PasswordEncoder passwordEncoder;
 
 	public void register(RequestRegisterDTO requestRegisterData) {
 		if (userService.isEmailExisted(requestRegisterData.getEmail())) {
@@ -52,12 +57,16 @@ public class AuthService {
 		verificationTokenService.markAsUsed(token);
 	}
 
-	public void resendVerificationEmail(String email) {
+	public void resendVerificationEmail(ResendVerificationRequestDTO resendVerificationRequest) {
 
-		User user = userService.getUserByEmail(email);
+		User user = userService.getUserByEmail(resendVerificationRequest.getEmail());
 
 		if (Boolean.TRUE.equals(user.getEmailVerified())) {
 			throw new AppRuntimeException(ErrorCode.EMAIL_ALREADY_VERIFIED);
+		}
+
+		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
+			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
 		}
 
 		String rawToken = verificationTokenService.createEmailVerifyToken(user);
@@ -68,6 +77,10 @@ public class AuthService {
 	public void forgotPassword(String email) {
 
 		User user = userService.getUserByEmail(email);
+
+		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
+			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
+		}
 
 		String rawToken = verificationTokenService.createResetPasswordToken(user);
 		emailService.sendForgotPasswordEmail(user.getEmail(), rawToken);
@@ -87,7 +100,22 @@ public class AuthService {
 
 		User user = token.getUser();
 
-		userService.updatePassword(user, request.getNewPassword());
+		if (user == null) {
+			throw new AppRuntimeException(ErrorCode.USER_NOT_FOUND);
+		}
+
+		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
+			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
+		}
+
+		if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+			throw new AppRuntimeException(ErrorCode.PASSWORD_CONFIRMATION_MISMATCH);
+		}
+		userService.validatePasswordPolicy(request.getNewPassword());
+		if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
+			throw new AppRuntimeException(ErrorCode.PASSWORD_SAME_AS_OLD);
+		}
+		userService.updatePasswordAndLastChangePass(user, request.getNewPassword());
 		verificationTokenService.markAsUsed(token);
 		tokenService.handleSessionAfterPasswordChange(user, PasswordChangeOption.REVOKE_ALL, null);
 	}

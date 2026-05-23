@@ -18,7 +18,8 @@ public class UserMapper {
 				.emailVerified(user.getEmailVerified()).role(user.getRole() != null ? user.getRole().getName() : null)
 				.accountStatus(user.getAccountStatus()).lastLoginAt(user.getLastLoginAt())
 				.failedLoginCount(user.getFailedLoginCount()).lockedUntil(user.getLockedUntil())
-				.passwordChangedAt(user.getPasswordChangedAt()).tokenVersion(user.getTokenVersion())
-				.createdAt(user.getCreatedAt()).updatedAt(user.getUpdatedAt()).deletedAt(user.getDeletedAt()).build();
+				.nextBookingAllowedAt(user.getNextBookingAllowedAt()).passwordChangedAt(user.getPasswordChangedAt())
+				.tokenVersion(user.getTokenVersion()).createdAt(user.getCreatedAt()).updatedAt(user.getUpdatedAt())
+				.deletedAt(user.getDeletedAt()).build();
 	}
 }

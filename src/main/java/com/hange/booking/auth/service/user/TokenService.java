@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.hange.booking.auth.dto.user.LogoutRequestDTO;
+import com.hange.booking.auth.dto.user.RefreshTokenRequestDTO;
 import com.hange.booking.auth.entity.user.PasswordChangeOption;
 import com.hange.booking.auth.entity.user.RefreshToken;
 import com.hange.booking.auth.entity.user.User;
@@ -68,15 +70,16 @@ public class TokenService {
 		refreshTokenRepository.save(token);
 	}
 
-	public void logout(String refreshToken) {
+	public void logout(LogoutRequestDTO logoutRequestDTO) {
 
-		System.out.println(refreshToken);
-		RefreshToken token = refreshTokenRepository.findByTokenHash(refreshToken)
+		RefreshToken token = refreshTokenRepository.findByTokenHash(logoutRequestDTO.getRefreshToken())
 				.orElseThrow(() -> new AppRuntimeException(ErrorCode.TOKEN_NOT_FOUND));
 		if (Boolean.TRUE.equals(token.getIsRevoked())) {
 			throw new AppRuntimeException(ErrorCode.TOKEN_ALREADY_REVOKED);
 		}
-
+		if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
+			throw new AppRuntimeException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+		}
 		token.setIsRevoked(true);
 		refreshTokenRepository.save(token);
 	}
@@ -106,7 +109,7 @@ public class TokenService {
 
 			// 3. check revoked
 			if (current.getIsRevoked()) {
-				throw new AppRuntimeException(ErrorCode.REFRESH_TOKEN_ALREADY_REVOKED);
+				throw new AppRuntimeException(ErrorCode.REFRESH_TOKEN_REVOKED);
 			}
 
 			// 4. check expired
@@ -124,13 +127,11 @@ public class TokenService {
 		}
 	}
 
-	public User verifyAndGetUser(String refreshToken) {
+	public User verifyAndGetUser(RefreshTokenRequestDTO refreshTokenRequestDTO) {
 
-		String tokenHash = refreshToken;
-
+		String tokenHash = refreshTokenRequestDTO.getRefreshToken();
 		RefreshToken token = refreshTokenRepository.findByTokenHash(tokenHash)
 				.orElseThrow(() -> new AppRuntimeException(ErrorCode.INVALID_REFRESH_TOKEN));
-
 		if (Boolean.TRUE.equals(token.getIsRevoked())) {
 			throw new AppRuntimeException(ErrorCode.REFRESH_TOKEN_REVOKED);
 		}
@@ -138,8 +139,11 @@ public class TokenService {
 		if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
 			throw new AppRuntimeException(ErrorCode.REFRESH_TOKEN_EXPIRED);
 		}
-
-		return token.getUser();
+		User user = token.getUser();
+		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
+			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
+		}
+		return user;
 	}
 
 	public void rotateRefreshToken(User user, String oldToken, String newToken, HttpServletRequest request) {

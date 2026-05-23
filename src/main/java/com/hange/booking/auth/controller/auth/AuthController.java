@@ -17,11 +17,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hange.booking.auth.dto.user.LogoutRequestDTO;
+import com.hange.booking.auth.dto.user.RefreshTokenRequestDTO;
 import com.hange.booking.auth.dto.user.RequestChangePasswordDTO;
 import com.hange.booking.auth.dto.user.RequestForgotPasswordDTO;
 import com.hange.booking.auth.dto.user.RequestRegisterDTO;
 import com.hange.booking.auth.dto.user.RequestResetPasswordDTO;
 import com.hange.booking.auth.dto.user.RequestUserLoginDTO;
+import com.hange.booking.auth.dto.user.ResendVerificationRequestDTO;
 import com.hange.booking.auth.dto.user.ResponseLoginDTO;
 import com.hange.booking.auth.entity.user.User;
 import com.hange.booking.auth.exception.AppRuntimeException;
@@ -64,8 +67,9 @@ public class AuthController {
 	}
 
 	@PostMapping("/resend-verification")
-	public ResponseEntity<ApiResponseFormat> resendVerification(@RequestBody String email) {
-		authService.resendVerificationEmail(email);
+	public ResponseEntity<ApiResponseFormat> resendVerification(
+			@RequestBody @Valid ResendVerificationRequestDTO resendVerificationRequest) {
+		authService.resendVerificationEmail(resendVerificationRequest);
 		return ResponseEntity.ok(ApiResponseUtil.success("Verification email resent", HttpStatus.OK.value()));
 	}
 
@@ -102,16 +106,17 @@ public class AuthController {
 		} catch (BadCredentialsException ex) {
 
 			userService.increaseFailedLogin(email);
-			throw new AppRuntimeException(ErrorCode.INVALID_CREDENTIALS);
+			throw new AppRuntimeException(ErrorCode.AUTH_INVALID_CREDENTIALS);
 		}
 	}
 
 	@PostMapping("/logout")
-	public ResponseEntity<ApiResponseFormat> logout(@RequestBody String refreshToken) {
+	public ResponseEntity<ApiResponseFormat> logout(@RequestBody @Valid LogoutRequestDTO logoutRequestDTO) {
 
-		tokenService.logout(refreshToken);
+		tokenService.logout(logoutRequestDTO);
 
-		return ResponseEntity.ok().body(ApiResponseUtil.success(refreshToken, HttpStatus.OK.value()));
+		return ResponseEntity.ok()
+				.body(ApiResponseUtil.success(logoutRequestDTO.getRefreshToken(), HttpStatus.OK.value()));
 	}
 
 	@PostMapping("/change-password")
@@ -125,11 +130,10 @@ public class AuthController {
 	}
 
 	@PostMapping("/refresh-token")
-	public ResponseEntity<ApiResponseFormat> refreshToken(@RequestBody String refreshToken,
+	public ResponseEntity<ApiResponseFormat> refreshToken(@RequestBody @Valid RefreshTokenRequestDTO requestDTO,
 			HttpServletRequest request) {
 		// 1. verify + lấy user
-		System.out.println("dspfjisdjfidjfidso");
-		User user = tokenService.verifyAndGetUser(refreshToken);
+		User user = tokenService.verifyAndGetUser(requestDTO);
 
 		// 2. lấy authority từ user
 		String authorities = user.getRole().getName();
@@ -140,7 +144,7 @@ public class AuthController {
 		// 4. rotate refresh token (🔥 rất quan trọng)
 		String newRefreshToken = securityUtil.createRefreshToken(user.getEmail());
 
-		tokenService.rotateRefreshToken(user, refreshToken, newRefreshToken, request);
+		tokenService.rotateRefreshToken(user, requestDTO.getRefreshToken(), newRefreshToken, request);
 
 		// 5. response
 		ResponseLoginDTO response = new ResponseLoginDTO();
