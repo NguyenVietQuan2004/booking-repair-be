@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 import com.hange.booking.auth.entity.user.TokenType;
 import com.hange.booking.auth.entity.user.User;
 import com.hange.booking.auth.entity.user.VerificationToken;
-import com.hange.booking.auth.exception.AppRuntimeException;
-import com.hange.booking.auth.exception.ErrorCode;
 import com.hange.booking.auth.repository.VerificationTokenRepository;
+import com.hange.booking.common.exception.AppRuntimeException;
+import com.hange.booking.common.exception.ErrorAuthCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,7 +36,7 @@ public class VerificationTokenService {
 	public VerificationToken verify(String rawToken, TokenType type) {
 		String hashToken = rawToken;
 		VerificationToken token = verificationTokenRepository.findByTokenHashAndType(hashToken, type)
-				.orElseThrow(() -> new AppRuntimeException(ErrorCode.TOKEN_TYPE_INVALID));
+				.orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.TOKEN_TYPE_INVALID));
 
 		validate(token);
 		return token;
@@ -53,10 +53,10 @@ public class VerificationTokenService {
 
 	private void validate(VerificationToken token) {
 		if (Boolean.TRUE.equals(token.getUsed()))
-			throw new AppRuntimeException(ErrorCode.TOKEN_ALREADY_USED);
+			throw new AppRuntimeException(ErrorAuthCode.TOKEN_ALREADY_USED);
 
 		if (token.getExpiresAt().isBefore(LocalDateTime.now()))
-			throw new AppRuntimeException(ErrorCode.TOKEN_EXPIRED);
+			throw new AppRuntimeException(ErrorAuthCode.TOKEN_EXPIRED);
 	}
 
 	public void markAsUsed(VerificationToken token) {

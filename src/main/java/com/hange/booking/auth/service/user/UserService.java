@@ -14,9 +14,9 @@ import com.hange.booking.auth.entity.role.Role;
 import com.hange.booking.auth.entity.user.AccountStatusEnum;
 import com.hange.booking.auth.entity.user.PasswordChangeOption;
 import com.hange.booking.auth.entity.user.User;
-import com.hange.booking.auth.exception.AppRuntimeException;
-import com.hange.booking.auth.exception.ErrorCode;
 import com.hange.booking.auth.repository.UserRepository;
+import com.hange.booking.common.exception.AppRuntimeException;
+import com.hange.booking.common.exception.ErrorAuthCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,12 +36,12 @@ public class UserService {
 	}
 
 	public User getUserById(Long id) {
-		return userRepository.findById(id).orElseThrow(() -> new AppRuntimeException(ErrorCode.USER_NOT_FOUND));
+		return userRepository.findById(id).orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.USER_NOT_FOUND));
 	}
 
 	public User getUserByEmail(String email) {
 
-		return userRepository.findByEmail(email).orElseThrow(() -> new AppRuntimeException(ErrorCode.USER_NOT_FOUND));
+		return userRepository.findByEmail(email).orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.USER_NOT_FOUND));
 	}
 
 	public void updateLoginSuccess(User user) {
@@ -52,7 +52,7 @@ public class UserService {
 
 	public void increaseFailedLogin(String email) {
 		User user = userRepository.findByEmail(email)
-				.orElseThrow(() -> new AppRuntimeException(ErrorCode.USER_NOT_FOUND));
+				.orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.USER_NOT_FOUND));
 
 		int count = user.getFailedLoginCount() == null ? 0 : user.getFailedLoginCount();
 		user.setFailedLoginCount(count + 1);
@@ -67,19 +67,19 @@ public class UserService {
 		User user = this.getUserByEmail(email);
 
 		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
-			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
+			throw new AppRuntimeException(ErrorAuthCode.USER_LOCKED);
 		}
 
 		if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
-			throw new AppRuntimeException(ErrorCode.AUTH_INVALID_CREDENTIALS);
+			throw new AppRuntimeException(ErrorAuthCode.AUTH_INVALID_CREDENTIALS);
 		}
 
 		if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
-			throw new AppRuntimeException(ErrorCode.PASSWORD_CONFIRMATION_MISMATCH);
+			throw new AppRuntimeException(ErrorAuthCode.PASSWORD_CONFIRMATION_MISMATCH);
 		}
 		this.validatePasswordPolicy(request.getNewPassword());
 		if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
-			throw new AppRuntimeException(ErrorCode.PASSWORD_CONFIRMATION_MISMATCH);
+			throw new AppRuntimeException(ErrorAuthCode.PASSWORD_CONFIRMATION_MISMATCH);
 		}
 
 		updatePasswordAndLastChangePass(user, request.getNewPassword());
@@ -92,10 +92,10 @@ public class UserService {
 		Number ver = jwt.getClaim("ver");
 		int tokenVersionInToken = ver.intValue();
 		User user = userRepository.findByEmail(email)
-				.orElseThrow(() -> new AppRuntimeException(ErrorCode.USER_NOT_FOUND));
+				.orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.USER_NOT_FOUND));
 
 		if (!user.getTokenVersion().equals(tokenVersionInToken)) {
-			throw new AppRuntimeException(ErrorCode.INVALID_TOKEN_VERSION);
+			throw new AppRuntimeException(ErrorAuthCode.INVALID_TOKEN_VERSION);
 		}
 	}
 
@@ -152,30 +152,30 @@ public class UserService {
 	public void validateUser(User user) {
 
 		if (user.getAccountStatus() != AccountStatusEnum.ACTIVE) {
-			throw new AppRuntimeException(ErrorCode.USER_NOT_ACTIVE);
+			throw new AppRuntimeException(ErrorAuthCode.USER_NOT_ACTIVE);
 		}
 
 		if (!Boolean.TRUE.equals(user.getEmailVerified())) {
-			throw new AppRuntimeException(ErrorCode.EMAIL_NOT_VERIFIED);
+			throw new AppRuntimeException(ErrorAuthCode.EMAIL_NOT_VERIFIED);
 		}
 
 		if (user.getRole() == null) {
-			throw new AppRuntimeException(ErrorCode.ROLE_NOT_FOUND);
+			throw new AppRuntimeException(ErrorAuthCode.ROLE_NOT_FOUND);
 		}
 
 		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
-			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
+			throw new AppRuntimeException(ErrorAuthCode.USER_LOCKED);
 		}
 	}
 
 	public void validatePasswordPolicy(String password) {
 		String PASSWORD_PATTERN = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$";
 		if (password == null || password.isBlank()) {
-			throw new AppRuntimeException(ErrorCode.PASSWORD_REQUIRED);
+			throw new AppRuntimeException(ErrorAuthCode.PASSWORD_REQUIRED);
 		}
 
 		if (!password.matches(PASSWORD_PATTERN)) {
-			throw new AppRuntimeException(ErrorCode.PASSWORD_POLICY_VIOLATION);
+			throw new AppRuntimeException(ErrorAuthCode.PASSWORD_POLICY_VIOLATION);
 		}
 	}
 

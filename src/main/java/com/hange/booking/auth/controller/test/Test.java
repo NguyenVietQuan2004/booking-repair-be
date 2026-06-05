@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class Test {
 
-	@GetMapping("/")
+	@GetMapping
 	public ResponseEntity<Map<String, Object>> ping() {
 		Map<String, Object> res = new HashMap<>();
 		res.put("status", "UP");

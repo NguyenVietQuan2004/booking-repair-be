@@ -18,8 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import com.hange.booking.auth.exception.AppRuntimeException;
-import com.hange.booking.auth.exception.ErrorCode;
+import com.hange.booking.common.exception.AppRuntimeException;
+import com.hange.booking.common.exception.ErrorFileCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -45,7 +45,7 @@ public class FileService {
 			System.out.println(">>> CREATE DIRECTORY SUCCESS: " + folder);
 
 		} catch (IOException e) {
-			throw new AppRuntimeException(ErrorCode.CREATE_FOLDER_FAILED);
+			throw new AppRuntimeException(ErrorFileCode.CREATE_FOLDER_FAILED);
 		}
 	}
 
@@ -79,30 +79,30 @@ public class FileService {
 
 				return uploadResult.get("secure_url").toString();
 			}
-			throw new AppRuntimeException(ErrorCode.FILE_UPLOAD_FAILED);
+			throw new AppRuntimeException(ErrorFileCode.FILE_UPLOAD_FAILED);
 
 		} catch (IOException e) {
-			throw new AppRuntimeException(ErrorCode.FILE_UPLOAD_FAILED);
+			throw new AppRuntimeException(ErrorFileCode.FILE_UPLOAD_FAILED);
 		}
 	}
 
 	public void validateFile(MultipartFile file) {
 
 		if (file == null || file.isEmpty()) {
-			throw new AppRuntimeException(ErrorCode.FILE_EMPTY);
+			throw new AppRuntimeException(ErrorFileCode.FILE_EMPTY);
 		}
 
 		String fileName = Paths.get(file.getOriginalFilename()).getFileName().toString();
 
 		if (!fileName.contains(".")) {
-			throw new AppRuntimeException(ErrorCode.INVALID_FILE_NAME);
+			throw new AppRuntimeException(ErrorFileCode.INVALID_FILE_NAME);
 		}
 
 		String ext = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
 
 		List<String> allowedExtensions = Arrays.asList("pdf", "jpg", "webp", "jpeg", "png", "doc", "docx");
 		if (!allowedExtensions.contains(ext)) {
-			throw new AppRuntimeException(ErrorCode.UNSUPPORTED_EXTENSION);
+			throw new AppRuntimeException(ErrorFileCode.UNSUPPORTED_EXTENSION);
 		}
 
 		List<String> allowedMimeTypes = Arrays.asList("application/pdf", "image/webp", "image/jpeg", "image/png",
@@ -110,24 +110,24 @@ public class FileService {
 
 		String mimeType = file.getContentType();
 		if (mimeType == null || !allowedMimeTypes.contains(mimeType)) {
-			throw new AppRuntimeException(ErrorCode.UNSUPPORTED_MIME_TYPE);
+			throw new AppRuntimeException(ErrorFileCode.UNSUPPORTED_MIME_TYPE);
 		}
 
 		if (file.getSize() > maxFileSize.toBytes()) {
-			throw new AppRuntimeException(ErrorCode.FILE_SIZE_EXCEEDED);
+			throw new AppRuntimeException(ErrorFileCode.FILE_SIZE_EXCEEDED);
 		}
 	}
 
 	public InputStreamResource getResource(String fileName, String folder) {
 
 		if (fileName == null || fileName.isBlank() || folder == null || folder.isBlank()) {
-			throw new AppRuntimeException(ErrorCode.MISSING_REQUIRED_PARAMS);
+			throw new AppRuntimeException(ErrorFileCode.MISSING_REQUIRED_PARAMS);
 		}
 		Path path = Paths.get(basePath, folder, fileName);
 		try {
 			return new InputStreamResource(Files.newInputStream(path));
 		} catch (IOException e) {
-			throw new AppRuntimeException(ErrorCode.FILE_NOT_FOUND);
+			throw new AppRuntimeException(ErrorFileCode.FILE_NOT_FOUND);
 		}
 	}
 }

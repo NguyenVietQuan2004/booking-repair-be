@@ -11,9 +11,9 @@ import com.hange.booking.auth.Specification.PermissionSpecification;
 import com.hange.booking.auth.dto.permission.PermissionFilterDTO;
 import com.hange.booking.auth.entity.permission.Permission;
 import com.hange.booking.auth.entity.role.Role;
-import com.hange.booking.auth.exception.AppRuntimeException;
-import com.hange.booking.auth.exception.ErrorCode;
 import com.hange.booking.auth.repository.PermissionRepository;
+import com.hange.booking.common.exception.AppRuntimeException;
+import com.hange.booking.common.exception.ErrorAuthCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +26,7 @@ public class PermissionService {
 	public Permission create(Permission permission) {
 
 		if (permissionRepository.existsByName(permission.getName())) {
-			throw new AppRuntimeException(ErrorCode.PERMISSION_ALREADY_EXISTS);
+			throw new AppRuntimeException(ErrorAuthCode.PERMISSION_ALREADY_EXISTS);
 		}
 
 		return permissionRepository.save(permission);
@@ -45,12 +45,12 @@ public class PermissionService {
 
 	public Permission getById(Long id) {
 		return permissionRepository.findById(id)
-				.orElseThrow(() -> new AppRuntimeException(ErrorCode.PERMISSION_NOT_FOUND));
+				.orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.PERMISSION_NOT_FOUND));
 	}
 
 	public Permission getByName(String name) {
 		return permissionRepository.findByName(name)
-				.orElseThrow(() -> new AppRuntimeException(ErrorCode.PERMISSION_NOT_FOUND));
+				.orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.PERMISSION_NOT_FOUND));
 	}
 
 	public Page<Permission> getAll(PermissionFilterDTO filter, Pageable pageable) {

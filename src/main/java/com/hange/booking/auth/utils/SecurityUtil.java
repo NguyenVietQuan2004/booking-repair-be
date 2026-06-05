@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -13,8 +15,8 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
-import com.hange.booking.auth.exception.AppRuntimeException;
-import com.hange.booking.auth.exception.ErrorCode;
+import com.hange.booking.common.exception.AppRuntimeException;
+import com.hange.booking.common.exception.ErrorAuthCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +33,11 @@ public class SecurityUtil {
 	private final JwtEncoder jwtEncoder;
 	private final JwtDecoder jwtDecoder;
 
+	public static String getCurrentUserEmail() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		return authentication.getName();
+	}
+
 	public Long getRefreshTokenExpiration() {
 		return jwt_refresh_token_expiration;
 	}
@@ -40,7 +47,7 @@ public class SecurityUtil {
 		Instant now = Instant.now();
 		Instant validity = now.plus(jwt_access_token_expiration, ChronoUnit.SECONDS);
 		if (authorities == null) {
-			throw new AppRuntimeException(ErrorCode.ROLE_NOT_FOUND);
+			throw new AppRuntimeException(ErrorAuthCode.ROLE_NOT_FOUND);
 
 		}
 		// @formatter:off

@@ -27,8 +27,6 @@ import com.hange.booking.auth.dto.user.RequestUserLoginDTO;
 import com.hange.booking.auth.dto.user.ResendVerificationRequestDTO;
 import com.hange.booking.auth.dto.user.ResponseLoginDTO;
 import com.hange.booking.auth.entity.user.User;
-import com.hange.booking.auth.exception.AppRuntimeException;
-import com.hange.booking.auth.exception.ErrorCode;
 import com.hange.booking.auth.service.auth.AuthService;
 import com.hange.booking.auth.service.user.TokenService;
 import com.hange.booking.auth.service.user.UserService;
@@ -36,6 +34,8 @@ import com.hange.booking.auth.utils.SecurityUtil;
 import com.hange.booking.auth.utils.FormatResponse.ApiResponseFormat;
 import com.hange.booking.auth.utils.FormatResponse.ApiResponseUtil;
 import com.hange.booking.auth.utils.mapper.UserMapper;
+import com.hange.booking.common.exception.AppRuntimeException;
+import com.hange.booking.common.exception.ErrorAuthCode;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -106,7 +106,7 @@ public class AuthController {
 		} catch (BadCredentialsException ex) {
 
 			userService.increaseFailedLogin(email);
-			throw new AppRuntimeException(ErrorCode.AUTH_INVALID_CREDENTIALS);
+			throw new AppRuntimeException(ErrorAuthCode.AUTH_INVALID_CREDENTIALS);
 		}
 	}
 

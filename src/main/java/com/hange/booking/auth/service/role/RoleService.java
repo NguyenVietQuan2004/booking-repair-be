@@ -8,10 +8,10 @@ import org.springframework.stereotype.Service;
 import com.hange.booking.auth.dto.role.RoleCreateRequest;
 import com.hange.booking.auth.entity.permission.Permission;
 import com.hange.booking.auth.entity.role.Role;
-import com.hange.booking.auth.exception.AppRuntimeException;
-import com.hange.booking.auth.exception.ErrorCode;
 import com.hange.booking.auth.repository.PermissionRepository;
 import com.hange.booking.auth.repository.RoleRepository;
+import com.hange.booking.common.exception.AppRuntimeException;
+import com.hange.booking.common.exception.ErrorAuthCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,7 +27,7 @@ public class RoleService {
 		String roleName = request.getName();
 
 		if (roleRepository.existsByName(roleName)) {
-			throw new AppRuntimeException(ErrorCode.ROLE_ALREADY_EXISTS);
+			throw new AppRuntimeException(ErrorAuthCode.ROLE_ALREADY_EXISTS);
 		}
 		List<Long> ids = request.getPermissionIds();
 
@@ -38,7 +38,7 @@ public class RoleService {
 		}
 		// CHECK missing permission
 		if (permissions.size() != request.getPermissionIds().size()) {
-			throw new AppRuntimeException(ErrorCode.PERMISSION_NOT_FOUND);
+			throw new AppRuntimeException(ErrorAuthCode.PERMISSION_NOT_FOUND);
 		}
 
 		Role role = Role.builder().name(roleName).description(request.getDescription()).permissions(permissions)
@@ -59,13 +59,13 @@ public class RoleService {
 
 	public Role getById(Long id) {
 
-		return roleRepository.findById(id).orElseThrow(() -> new AppRuntimeException(ErrorCode.ROLE_NOT_FOUND));
+		return roleRepository.findById(id).orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.ROLE_NOT_FOUND));
 	}
 
 	public Role getRole(String roleUserEnum) {
 
 		return roleRepository.findByName(roleUserEnum)
-				.orElseThrow(() -> new AppRuntimeException(ErrorCode.ROLE_NOT_FOUND));
+				.orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.ROLE_NOT_FOUND));
 	}
 
 	public List<Role> getAll() {
@@ -82,7 +82,7 @@ public class RoleService {
 	public Role addPermission(Role role, Permission permission) {
 
 		if (role.getPermissions().contains(permission)) {
-			throw new AppRuntimeException(ErrorCode.PERMISSION_ALREADY_ASSIGNED);
+			throw new AppRuntimeException(ErrorAuthCode.PERMISSION_ALREADY_ASSIGNED);
 		}
 
 		role.getPermissions().add(permission);
@@ -93,7 +93,7 @@ public class RoleService {
 	public Role removePermission(Role role, Permission permission) {
 
 		if (!role.getPermissions().contains(permission)) {
-			throw new AppRuntimeException(ErrorCode.PERMISSION_NOT_ASSIGNED);
+			throw new AppRuntimeException(ErrorAuthCode.PERMISSION_NOT_ASSIGNED);
 		}
 
 		role.getPermissions().remove(permission);
@@ -103,7 +103,7 @@ public class RoleService {
 
 	public Role updateRole(Long id, RoleCreateRequest request) {
 
-		Role role = roleRepository.findById(id).orElseThrow(() -> new AppRuntimeException(ErrorCode.ROLE_NOT_FOUND));
+		Role role = roleRepository.findById(id).orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.ROLE_NOT_FOUND));
 
 		// update description
 		role.setDescription(request.getDescription());
@@ -123,7 +123,7 @@ public class RoleService {
 
 			// check missing permission
 			if (permissions.size() != ids.size()) {
-				throw new AppRuntimeException(ErrorCode.PERMISSION_NOT_FOUND);
+				throw new AppRuntimeException(ErrorAuthCode.PERMISSION_NOT_FOUND);
 			}
 		}
 

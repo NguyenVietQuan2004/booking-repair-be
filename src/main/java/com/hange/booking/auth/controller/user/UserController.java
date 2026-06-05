@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hange.booking.auth.dto.user.RequestUpdateUserDTO;
 import com.hange.booking.auth.entity.user.User;
-import com.hange.booking.auth.exception.AppRuntimeException;
-import com.hange.booking.auth.exception.ErrorCode;
 import com.hange.booking.auth.service.user.UserService;
 import com.hange.booking.auth.utils.FormatResponse.ApiResponseFormat;
 import com.hange.booking.auth.utils.FormatResponse.ApiResponseUtil;
 import com.hange.booking.auth.utils.mapper.UserMapper;
+import com.hange.booking.common.exception.AppRuntimeException;
+import com.hange.booking.common.exception.ErrorAuthCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,7 +32,7 @@ public class UserController {
 	public ResponseEntity<ApiResponseFormat> getMe(Authentication authentication) {
 
 		if (authentication == null || !authentication.isAuthenticated()) {
-			throw new AppRuntimeException(ErrorCode.UNAUTHORIZED);
+			throw new AppRuntimeException(ErrorAuthCode.UNAUTHORIZED);
 		}
 
 		String email = authentication.getName();
@@ -47,7 +47,7 @@ public class UserController {
 			@RequestBody RequestUpdateUserDTO request) {
 
 		if (authentication == null || !authentication.isAuthenticated()) {
-			throw new AppRuntimeException(ErrorCode.UNAUTHORIZED);
+			throw new AppRuntimeException(ErrorAuthCode.UNAUTHORIZED);
 		}
 
 		String email = authentication.getName();

@@ -19,6 +19,7 @@ import com.hange.booking.auth.entity.permission.Permission;
 import com.hange.booking.auth.service.permission.PermissionService;
 import com.hange.booking.auth.utils.FormatResponse.ApiResponseFormat;
 import com.hange.booking.auth.utils.FormatResponse.ApiResponseUtil;
+import com.hange.booking.common.dto.PageResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -48,9 +49,9 @@ public class PermissionController {
 
 	@GetMapping
 	public ResponseEntity<ApiResponseFormat> getAll(PermissionFilterDTO filter,
-			@PageableDefault(size = 999) Pageable pageable) {
+			@PageableDefault(size = 20) Pageable pageable) {
 		Page<Permission> permissions = permissionService.getAll(filter, pageable);
-		return ResponseEntity.ok(ApiResponseUtil.success(permissions.getContent(), HttpStatus.OK.value()));
+		return ResponseEntity.ok(ApiResponseUtil.success(PageResponse.from(permissions), HttpStatus.OK.value()));
 	}
 
 	@DeleteMapping("/{id}")

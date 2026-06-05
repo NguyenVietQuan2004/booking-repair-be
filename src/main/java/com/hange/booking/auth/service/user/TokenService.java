@@ -10,9 +10,9 @@ import com.hange.booking.auth.dto.user.RefreshTokenRequestDTO;
 import com.hange.booking.auth.entity.user.PasswordChangeOption;
 import com.hange.booking.auth.entity.user.RefreshToken;
 import com.hange.booking.auth.entity.user.User;
-import com.hange.booking.auth.exception.AppRuntimeException;
-import com.hange.booking.auth.exception.ErrorCode;
 import com.hange.booking.auth.repository.RefreshTokenRepository;
+import com.hange.booking.common.exception.AppRuntimeException;
+import com.hange.booking.common.exception.ErrorAuthCode;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
@@ -73,12 +73,12 @@ public class TokenService {
 	public void logout(LogoutRequestDTO logoutRequestDTO) {
 
 		RefreshToken token = refreshTokenRepository.findByTokenHash(logoutRequestDTO.getRefreshToken())
-				.orElseThrow(() -> new AppRuntimeException(ErrorCode.TOKEN_NOT_FOUND));
+				.orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.TOKEN_NOT_FOUND));
 		if (Boolean.TRUE.equals(token.getIsRevoked())) {
-			throw new AppRuntimeException(ErrorCode.TOKEN_ALREADY_REVOKED);
+			throw new AppRuntimeException(ErrorAuthCode.TOKEN_ALREADY_REVOKED);
 		}
 		if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
-			throw new AppRuntimeException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+			throw new AppRuntimeException(ErrorAuthCode.REFRESH_TOKEN_EXPIRED);
 		}
 		token.setIsRevoked(true);
 		refreshTokenRepository.save(token);
@@ -103,18 +103,18 @@ public class TokenService {
 
 			// 2. check ownership
 			if (!current.getUser().getId().equals(user.getId())) {
-				throw new AppRuntimeException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+				throw new AppRuntimeException(ErrorAuthCode.REFRESH_TOKEN_NOT_FOUND);
 				// không nên báo rõ để tránh leak info
 			}
 
 			// 3. check revoked
 			if (current.getIsRevoked()) {
-				throw new AppRuntimeException(ErrorCode.REFRESH_TOKEN_REVOKED);
+				throw new AppRuntimeException(ErrorAuthCode.REFRESH_TOKEN_REVOKED);
 			}
 
 			// 4. check expired
 			if (current.getExpiresAt().isBefore(LocalDateTime.now())) {
-				throw new AppRuntimeException(ErrorCode.REFRESH_TOKEN_REVOKED);
+				throw new AppRuntimeException(ErrorAuthCode.REFRESH_TOKEN_REVOKED);
 			}
 
 			// 5. revoke tất cả trừ token hiện tại
@@ -131,17 +131,17 @@ public class TokenService {
 
 		String tokenHash = refreshTokenRequestDTO.getRefreshToken();
 		RefreshToken token = refreshTokenRepository.findByTokenHash(tokenHash)
-				.orElseThrow(() -> new AppRuntimeException(ErrorCode.INVALID_REFRESH_TOKEN));
+				.orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.INVALID_REFRESH_TOKEN));
 		if (Boolean.TRUE.equals(token.getIsRevoked())) {
-			throw new AppRuntimeException(ErrorCode.REFRESH_TOKEN_REVOKED);
+			throw new AppRuntimeException(ErrorAuthCode.REFRESH_TOKEN_REVOKED);
 		}
 
 		if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
-			throw new AppRuntimeException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+			throw new AppRuntimeException(ErrorAuthCode.REFRESH_TOKEN_EXPIRED);
 		}
 		User user = token.getUser();
 		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
-			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
+			throw new AppRuntimeException(ErrorAuthCode.USER_LOCKED);
 		}
 		return user;
 	}
@@ -150,7 +150,7 @@ public class TokenService {
 		String oldHash = (oldToken);
 
 		RefreshToken token = refreshTokenRepository.findByTokenHash(oldHash)
-				.orElseThrow(() -> new AppRuntimeException(ErrorCode.INVALID_REFRESH_TOKEN));
+				.orElseThrow(() -> new AppRuntimeException(ErrorAuthCode.INVALID_REFRESH_TOKEN));
 
 		// revoke token cũ
 		token.setIsRevoked(true);

@@ -14,13 +14,13 @@ import com.hange.booking.auth.entity.user.PasswordChangeOption;
 import com.hange.booking.auth.entity.user.TokenType;
 import com.hange.booking.auth.entity.user.User;
 import com.hange.booking.auth.entity.user.VerificationToken;
-import com.hange.booking.auth.exception.AppRuntimeException;
-import com.hange.booking.auth.exception.ErrorCode;
 import com.hange.booking.auth.service.EmailService;
 import com.hange.booking.auth.service.role.RoleService;
 import com.hange.booking.auth.service.user.TokenService;
 import com.hange.booking.auth.service.user.UserService;
 import com.hange.booking.auth.service.user.VerificationTokenService;
+import com.hange.booking.common.exception.AppRuntimeException;
+import com.hange.booking.common.exception.ErrorAuthCode;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class AuthService {
 
 	public void register(RequestRegisterDTO requestRegisterData) {
 		if (userService.isEmailExisted(requestRegisterData.getEmail())) {
-			throw new AppRuntimeException(ErrorCode.EMAIL_ALREADY_EXISTS);
+			throw new AppRuntimeException(ErrorAuthCode.EMAIL_ALREADY_EXISTS);
 		}
 
 		Role role = roleService.getRole(RoleUserEnum.USER.name());
@@ -62,11 +62,11 @@ public class AuthService {
 		User user = userService.getUserByEmail(resendVerificationRequest.getEmail());
 
 		if (Boolean.TRUE.equals(user.getEmailVerified())) {
-			throw new AppRuntimeException(ErrorCode.EMAIL_ALREADY_VERIFIED);
+			throw new AppRuntimeException(ErrorAuthCode.EMAIL_ALREADY_VERIFIED);
 		}
 
 		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
-			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
+			throw new AppRuntimeException(ErrorAuthCode.USER_LOCKED);
 		}
 
 		String rawToken = verificationTokenService.createEmailVerifyToken(user);
@@ -79,7 +79,7 @@ public class AuthService {
 		User user = userService.getUserByEmail(email);
 
 		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
-			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
+			throw new AppRuntimeException(ErrorAuthCode.USER_LOCKED);
 		}
 
 		String rawToken = verificationTokenService.createResetPasswordToken(user);
@@ -101,19 +101,19 @@ public class AuthService {
 		User user = token.getUser();
 
 		if (user == null) {
-			throw new AppRuntimeException(ErrorCode.USER_NOT_FOUND);
+			throw new AppRuntimeException(ErrorAuthCode.USER_NOT_FOUND);
 		}
 
 		if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
-			throw new AppRuntimeException(ErrorCode.USER_LOCKED);
+			throw new AppRuntimeException(ErrorAuthCode.USER_LOCKED);
 		}
 
 		if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-			throw new AppRuntimeException(ErrorCode.PASSWORD_CONFIRMATION_MISMATCH);
+			throw new AppRuntimeException(ErrorAuthCode.PASSWORD_CONFIRMATION_MISMATCH);
 		}
 		userService.validatePasswordPolicy(request.getNewPassword());
 		if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
-			throw new AppRuntimeException(ErrorCode.PASSWORD_SAME_AS_OLD);
+			throw new AppRuntimeException(ErrorAuthCode.PASSWORD_SAME_AS_OLD);
 		}
 		userService.updatePasswordAndLastChangePass(user, request.getNewPassword());
 		verificationTokenService.markAsUsed(token);
