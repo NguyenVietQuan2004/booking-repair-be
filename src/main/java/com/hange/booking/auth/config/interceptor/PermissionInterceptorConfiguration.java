@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 public class PermissionInterceptorConfiguration implements WebMvcConfigurer {
 	private final PermissionInterceptor permissionInterceptor;
 
+// chỉ dùng cho http request
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
 		String[] whiteList = { "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/storage/**",

@@ -58,7 +58,7 @@ public class PermissionInterceptor implements HandlerInterceptor {
 					    "error": "INVALID_TOKEN"
 					}
 					""");
-
+			System.out.println("🚫 Access denied for: unknow user");
 			return false;
 		}
 		String email = authentication.getName();

@@ -3,6 +3,7 @@ package com.hange.booking.booking.service.impl;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,8 +20,10 @@ import com.hange.booking.booking.dto.booking.BookingFilterDTO;
 import com.hange.booking.booking.dto.booking.RequestCreateBookingDTO;
 import com.hange.booking.booking.dto.booking.ResponseBookingDTO;
 import com.hange.booking.booking.dto.notification.RequestCreateNotificationDTO;
+import com.hange.booking.booking.dto.notification.ResponseNotificationDTO;
 import com.hange.booking.booking.entity.Booking;
 import com.hange.booking.booking.entity.ServiceSlot;
+import com.hange.booking.booking.entity.SocketMessage;
 import com.hange.booking.booking.entity.constant.BookingStatus;
 import com.hange.booking.booking.entity.constant.NotificationType;
 import com.hange.booking.booking.repository.BookingRepository;
@@ -42,7 +45,10 @@ public class BookingServiceImpl implements BookingService {
 	private final ServiceSlotRepository slotRepository;
 	private final UserRepository userRepository;
 	private final UserService userService;
+	private final SocketServiceImpl socketServiceImpl;
 	private final BookingMapper mapper;
+	@Value("${ADMIN_EMAIL}")
+	private String adminEmail;
 
 	@Override
 	@Transactional
@@ -52,9 +58,9 @@ public class BookingServiceImpl implements BookingService {
 
 		User user = userService.getUserByEmail(email);
 
-		if (user.getNextBookingAllowedAt() != null && user.getNextBookingAllowedAt().isAfter(LocalDateTime.now())) {
-			throw new AppRuntimeException(ErrorBookingCode.BOOKING_RATE_LIMIT);
-		}
+//		if (user.getNextBookingAllowedAt() != null && user.getNextBookingAllowedAt().isAfter(LocalDateTime.now())) {
+//			throw new AppRuntimeException(ErrorBookingCode.BOOKING_RATE_LIMIT);
+//		}
 
 		ServiceSlot slot = slotRepository.findByIdForUpdate(request.getSlotId())
 				.orElseThrow(() -> new AppRuntimeException(ErrorBookingCode.SERVICE_SLOT_NOT_FOUND));
@@ -86,10 +92,18 @@ public class BookingServiceImpl implements BookingService {
 				.serviceDuration(slot.getService().getDurationMinutes()).locationName(slot.getLocation().getName())
 				.locationAddress(slot.getLocation().getAddress()).note(request.getNote()).build();
 		Booking saved = bookingRepository.save(booking);
-		notificationService.create(RequestCreateNotificationDTO.builder().userId(1L) // hoặc query role admin
-				.bookingId(saved.getId()).type(NotificationType.BOOKING_CREATED).title("New booking")
-				.message("User " + user.getFullName() + " created booking #" + saved.getId()).build());
-//		socketService.sendToUser(ADMIN_ID, "BOOKING_CREATED", saved);
+
+		User userAdmin = userService.getUserByEmail(adminEmail);
+
+		ResponseNotificationDTO noti = notificationService
+				.create(RequestCreateNotificationDTO.builder().userId(userAdmin.getId()) // hoặc
+						// query
+						// role
+						// admin
+						.bookingId(saved.getId()).type(NotificationType.BOOKING_CREATED).title("New booking")
+						.message("User " + user.getFullName() + " created booking #" + saved.getId()).build());
+
+		socketServiceImpl.sendToUser(userAdmin.getId(), new SocketMessage(BookingStatus.PENDING, noti));
 		return mapper.toDTO(saved);
 	}
 
@@ -107,11 +121,11 @@ public class BookingServiceImpl implements BookingService {
 		booking.setStatus(BookingStatus.CONFIRMED);
 		Booking saved = bookingRepository.save(booking);
 
-		notificationService.create(RequestCreateNotificationDTO.builder().userId(saved.getUser().getId())
-				.bookingId(saved.getId()).type(NotificationType.CONFIRMED).title("Booking confirmed")
-				.message("Your booking #" + saved.getId() + " is confirmed").build());
-//		socketService.sendToUser(saved.getUser().getId(), "BOOKING_CONFIRMED", saved);
-		return mapper.toDTO(bookingRepository.save(booking));
+		ResponseNotificationDTO noti = notificationService.create(RequestCreateNotificationDTO.builder()
+				.userId(saved.getUser().getId()).bookingId(saved.getId()).type(NotificationType.CONFIRMED)
+				.title("Booking confirmed").message("Your booking #" + saved.getId() + " is confirmed").build());
+		socketServiceImpl.sendToUser(saved.getUser().getId(), new SocketMessage(BookingStatus.CONFIRMED, noti));
+		return mapper.toDTO(saved);
 	}
 
 	@Override
@@ -133,11 +147,14 @@ public class BookingServiceImpl implements BookingService {
 		slotRepository.save(slot);
 
 		booking.setStatus(BookingStatus.REJECTED);
-		notificationService.create(RequestCreateNotificationDTO.builder().userId(booking.getUser().getId())
-				.bookingId(booking.getId()).type(NotificationType.REJECTED).title("Booking rejected")
-				.message("Your booking was rejected").build());
+		Booking saved = bookingRepository.save(booking);
+		ResponseNotificationDTO noti = notificationService.create(RequestCreateNotificationDTO.builder()
+				.userId(booking.getUser().getId()).bookingId(booking.getId()).type(NotificationType.REJECTED)
+				.title("Booking rejected").message("Your booking #" + saved.getId() + " was rejected").build());
 //		socketService.sendToUser(saved.getUser().getId(), "BOOKING_CONFIRMED", saved);
-		return mapper.toDTO(bookingRepository.save(booking));
+
+		socketServiceImpl.sendToUser(saved.getUser().getId(), new SocketMessage(BookingStatus.REJECTED, noti));
+		return mapper.toDTO(saved);
 	}
 
 	@Override
@@ -163,11 +180,17 @@ public class BookingServiceImpl implements BookingService {
 		slotRepository.save(slot);
 
 		booking.setStatus(BookingStatus.CANCELLED);
-		notificationService.create(RequestCreateNotificationDTO.builder().userId(booking.getUser().getId())
-				.bookingId(booking.getId()).type(NotificationType.CANCELLED).title("Booking cancelled")
-				.message("Booking was cancelled by user").build());
-//		socketService.sendToUser(ADMIN_ID, "BOOKING_CONFIRMED", saved);
-		return mapper.toDTO(bookingRepository.save(booking));
+		Booking saved = bookingRepository.save(booking);
+		User userAdmin = userService.getUserByEmail(adminEmail);
+		ResponseNotificationDTO noti = notificationService.create(RequestCreateNotificationDTO.builder()
+				.userId(userAdmin.getId()).bookingId(booking.getId()).type(NotificationType.CANCELLED)
+				.title("Booking cancelled").message("Booking #" + saved.getId() + " was cancelled by user")
+
+				.build());
+
+		socketServiceImpl.sendToUser(userAdmin.getId(), new SocketMessage(BookingStatus.CANCELLED, noti));
+
+		return mapper.toDTO(saved);
 	}
 
 	@Override
