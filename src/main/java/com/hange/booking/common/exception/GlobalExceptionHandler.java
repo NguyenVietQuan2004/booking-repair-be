@@ -91,7 +91,12 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.badRequest()
 				.body(ApiResponseUtil.error(message, 400, ErrorAuthCode.VALIDATION_FAILED.name()));
 	}
-//
+
+	@ExceptionHandler(RuntimeException.class)
+	public ResponseEntity<ApiResponseFormat> handleRuntime(RuntimeException ex) {
+		return ResponseEntity.internalServerError()
+				.body(ApiResponseUtil.error("Internal server error", 500, "INTERNAL_ERROR"));
+	}//
 //	// Xử lý tất cả các exception khác
 //	@ExceptionHandler(Exception.class)
 //	public ResponseEntity<ApiResponseFormat> handleAllExceptions(Exception ex) {

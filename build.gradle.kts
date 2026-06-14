@@ -3,6 +3,7 @@ plugins {
 	id("org.springframework.boot") version "4.0.6"
 	id("io.spring.dependency-management") version "1.1.7"
 	id("io.freefair.lombok") version "8.6"
+	id("jacoco")
 }
 
 group = "vn.hange"
@@ -12,8 +13,43 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
 	}
+
+}
+jacoco {
+    toolVersion = "0.8.13"
 }
 
+tasks.test {
+    useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+	classDirectories.setFrom(
+        files(
+            classDirectories.files.map {
+                fileTree(it) {
+                    exclude(
+                        "**/*Application.class",
+                        "**/dto/**",
+                        "**/entity/**",
+                        "**/config/**",
+                        "**/exception/**",
+                        "**/constant/**",
+                        "**/mapper/**",
+                        "**/enum/**"
+                    )
+                }
+            }
+        )
+    )
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+}
 repositories {
 	mavenCentral()
 }
@@ -37,12 +73,12 @@ dependencies {
 	implementation("com.bucket4j:bucket4j-core:8.10.1")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	implementation("org.springframework.boot:spring-boot-starter-security")
-	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	implementation("com.cloudinary:cloudinary-http44:1.39.0")
 
 
 	implementation("org.springframework.boot:spring-boot-starter")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

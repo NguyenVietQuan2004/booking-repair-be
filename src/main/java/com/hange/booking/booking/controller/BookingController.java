@@ -21,6 +21,7 @@ import com.hange.booking.booking.dto.booking.ResponseBookingDTO;
 import com.hange.booking.booking.service.BookingService;
 import com.hange.booking.common.dto.PageResponse;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -31,7 +32,7 @@ public class BookingController {
 	private final BookingService bookingService;
 
 	@PostMapping
-	public ResponseEntity<ApiResponseFormat> create(@RequestBody RequestCreateBookingDTO request) {
+	public ResponseEntity<ApiResponseFormat> create(@RequestBody @Valid RequestCreateBookingDTO request) {
 
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(ApiResponseUtil.success(bookingService.create(request), 201));
